@@ -7,16 +7,18 @@ os.environ["TF_XLA_FLAGS"] = "--tf_xla_auto_jit=2"
 # This control parallelism in Tensorflow
 parallel_threads = 128
 # This controls how many batches to prefetch
-prefetch_buffer_size = 8 # tf.data.AUTOTUNE
+prefetch_buffer_size = 16 # tf.data.AUTOTUNE
 os.environ['OMP_NUM_THREADS'] = str(parallel_threads)
 num_parallel_readers = parallel_threads
 
 # how many training steps to take during profiling
-num_steps = 10
+num_steps = 20
 use_profiler = True
 
 import tensorflow as tf
 from tensorflow.python.profiler import trace
+
+import pandas as pd
 
 #########################################################################
 # Here's the Residual layer from the first half again:
@@ -268,6 +270,19 @@ def train_epoch(i_epoch, step_in_epoch, train_ds, val_ds, network, optimizer, BA
         mean_rate = sum / i
         stddev_rate = math.sqrt( sum2/i - mean_rate * mean_rate )
         print(f'mean image/s = {mean_rate:8.2f}   standard deviation: {stddev_rate:8.2f}')
+        df = pd.DataFrame(
+            {"parallel_threads": parallel_threads,
+             "prefetch_buffer_size": prefetch_buffer_size,
+             "mean_images": mean_rate,
+             "std_dev": stddev_rate
+             },
+            index=[0]
+            )
+        # if file does not exist write header 
+        if not os.path.isfile('hw_profiler.csv'):
+            df.to_csv('hw_profiler.csv', header='column_names', index=False)
+        else: # else it exists so append without writing the header
+            df.to_csv('hw_profiler.csv', mode='a', header=False, index=False)
         tf.profiler.experimental.stop()
         sys.exit(0)
 
@@ -342,7 +357,7 @@ def main():
     # Here's some configuration:
     #########################################################################
     BATCH_SIZE = 256
-    N_EPOCHS = 10
+    N_EPOCHS = 1
 
     train_ds, val_ds = prepare_data_loader(BATCH_SIZE)
 

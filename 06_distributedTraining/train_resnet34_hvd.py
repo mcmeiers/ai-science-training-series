@@ -239,13 +239,11 @@ def calculate_loss(logits, labels):
 @tf.function()
 def training_step(network, optimizer, images, labels):
     with tf.GradientTape() as tape:
+        tape = hvd.DistributedGradientTape(tape)
         logits = network(images, training=True)
         loss = calculate_loss(logits, labels)
+        gradients = tape.gradient(loss, network.trainable_variables)
 
-    # HVD-4 wrap the gradient tape
-    tape = hvd.DistributedGradientTape(tape)
-    gradients = tape.gradient(loss, network.trainable_variables)
-    
     optimizer.apply_gradients(zip(gradients, network.trainable_variables))
 
     accuracy = calculate_accuracy(logits, labels)
