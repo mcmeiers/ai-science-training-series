@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #COBALT -t 60
-#COBALT -q single-gpu
-#COBALT -A datascience
+#COBALT -q full-node
+#COBALT -A ALCFAITP
 #COBALT -n 1
 #COBALT --attrs filesystems=home,grand
 
